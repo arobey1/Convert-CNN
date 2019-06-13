@@ -18,7 +18,6 @@ class Net(nn.Module):
         # x = self.pool(F.relu(self.conv2(x)))
         # x = F.relu(self.conv2(x))
         # x = x.view(-1, 16 * 24 * 24)
-        print(x.detach().numpy())
         x = x.view(-1, 6 * 28 * 28)
         # x = F.relu(self.fc1(x))
         # x = F.relu(self.fc2(x))
