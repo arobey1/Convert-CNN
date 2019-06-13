@@ -1,5 +1,4 @@
 import torch
-import torch.optim as optim
 from scipy.linalg import circulant
 import numpy as np
 
@@ -53,10 +52,10 @@ def conv_layer_as_matrix_op(W, b, x, n, k):
     output_im_size = n - k + 1
 
     Wx = (W @ x).reshape(i, output_im_size, output_im_size)
-    return Wx + b.reshape(i, 1, 1)
+    return np.maximum(Wx + b.reshape(i, 1, 1), 0)
 
 
-def linear_layer(W, b, x):
+def linear_layer(W, b, x, use_relu=True):
     """Pass an input vector x through a fully connected layer defined by a weight
     matrix W and a bias vector b
 
@@ -64,11 +63,14 @@ def linear_layer(W, b, x):
         W: (n2, n1) matrix  - weight matrix for a linear layer of a neural network
         b: (n2, 1) vector   - bias vector for alinear layer of a neural network
         x: (n1, 1) vector   - input to the linear layer
+        use_relu: bool      - flag to use ReLU activation
 
     returns:
         (n2, 1) vector representing output of linear layer
     """
 
+    if use_relu is True:
+        return np.maximum(W @ x + b, 0)
     return W @ x + b
 
 def create_W_matrix(n, conv_weight):
@@ -97,13 +99,14 @@ def create_W_matrix(n, conv_weight):
     num_rows_per_block = (n - k + 1) ** 2
 
     # initialize W to be an array of all zeros
-    W = np.zeros((6 * num_rows_per_block, 3 * n ** 2))
+    W = np.zeros((output_depth * num_rows_per_block, input_depth * n ** 2))
+    # W = np.zeros((6 * num_rows_per_block, 3 * n ** 2))
 
     # i indexes the output feature map stack
-    for i in range(6):
+    for i in range(output_depth):
 
         # j indexes the input feature map stack (i.e. number of channels in input image)
-        for j in range(3):
+        for j in range(input_depth):
 
             # Get the filter that convolves the i^th output feature map with the
             # j^th input feature map (i.e. channel for the first layer)
@@ -113,7 +116,7 @@ def create_W_matrix(n, conv_weight):
             # block of V_ij is a circulant matrix, meaning that each entry appears
             # in each row and column exactly once.  V_ij will have dimensions
             # (num_rows_per_block ** 2, n ** 2)
-            V_ij = filter_to_bc_matrix(filter, 32)
+            V_ij = filter_to_bc_matrix(filter, n)
 
             # Broadcast V_ij into the i^th block row and the j^th block column of W
             W[i * num_rows_per_block : (i + 1) * num_rows_per_block, j * n ** 2 : (j + 1) * n ** 2] = V_ij
