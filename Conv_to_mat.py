@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.linalg import circulant
 from train_cnn import create_loaders
+from scipy.io import savemat
 
 
 class ConvNet:
@@ -16,10 +17,24 @@ class ConvNet:
         self._conv_weights = self.__create_conv_weights(conv_weights)
         # self.__test_similarity()
 
+        data = {}
+        data['network'] = {
+            'weights': self._conv_weights + self._lin_weights,
+            'dims': ['784-2880-4000-500-10'],
+            'activation': 'relu',
+            'accuracy': 98,
+        }
+
+        savemat('784-2880-4000-500-10-cnn.mat', data)
+
 
     @property
     def conv_weights_and_biases():
         return zip(self._conv_weights, self._conv_biases)
+
+    @property
+    def linear_weights_and_biases():
+        return zip(self._lin_weights, self._lin_biases)
 
 
     def __load_numpy_params(self):
@@ -46,7 +61,7 @@ class ConvNet:
 
             elif 'fc' in param_tensor or 'classifier' in param_tensor:
                 if 'weight' in param_tensor:
-                    lin_weights.append(numpy_tensor)
+                    lin_weights.append(numpy_tensor.astype(np.float64))
                 elif 'bias' in param_tensor:
                     lin_biases.append(numpy_tensor)
                 else:
