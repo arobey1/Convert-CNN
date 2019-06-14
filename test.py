@@ -14,10 +14,10 @@ TEST_BATCH_SIZE = 1
 
 def main():
 
-    model = torch.load(FNAME)
+    model = torch.load('mnist_cnn_small.pt')
     # model = models.vgg16()
     # print_model_params(model)
-    ConvNet(model, [32, 28, 24])
+    ConvNet(model, [28, 24, 20])
 
     quit()
 
