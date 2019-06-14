@@ -1,7 +1,9 @@
 import torch
+import torchvision.models as models
 
 from analyze_model import *
 from CNN import Net
+from Conv_to_mat import ConvNet
 
 FNAME = 'cnn-model.pt'
 
@@ -13,9 +15,16 @@ TEST_BATCH_SIZE = 1
 def main():
 
     model = torch.load(FNAME)
+    # model = models.vgg16()
+    # print_model_params(model)
+    ConvNet(model, [32, 28, 24])
+
+    quit()
+
     conv_weights, conv_biases, lin_weights, lin_biases = get_numpy_params(model)
 
-    n_values = [32, 28, 24]
+    n_values = [256, 246, 244, 242, 240, 238]
+    k_values = [11, 5, 3, 3, 3]
     new_conv_weights = create_conv_weights(conv_weights, n_values)
 
     _, test_loader, classes = create_loaders()
@@ -80,7 +89,7 @@ def get_numpy_params(model):
 
     for param_tensor in model.state_dict():
         numpy_tensor = model.state_dict()[param_tensor].numpy()
-        if 'conv' in param_tensor:
+        if 'conv' in param_tensor or 'features' in param_tensor:
             if 'weight' in param_tensor:
                 conv_weights.append(numpy_tensor)
             elif 'bias' in param_tensor:
@@ -88,7 +97,7 @@ def get_numpy_params(model):
             else:
                 print('ERROR: conv param that is neither a weight nor a bias')
 
-        elif 'fc' in param_tensor:
+        elif 'fc' in param_tensor or 'classifier' in param_tensor:
             if 'weight' in param_tensor:
                 lin_weights.append(numpy_tensor)
             elif 'bias' in param_tensor:
