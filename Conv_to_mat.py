@@ -3,38 +3,63 @@ from scipy.linalg import circulant
 from train_cnn import create_loaders
 from scipy.io import savemat
 
+INPUT_SIZE = 32
+INPUT_CHANNELS = 3
 
 class ConvNet:
 
-    def __init__(self, model, n_values):
+    def __init__(self, model, accuracy, kernel_size=5):
         self._model = model
-        self.n_values = n_values
+        self.accuracy = accuracy
+        self.kernel_size = kernel_size
 
         conv_weights, self._conv_biases, self._lin_weights, self._lin_biases = self.__load_numpy_params()
-
+        self.n_values = range(INPUT_SIZE, INPUT_SIZE - (len(conv_weights) + 1) * (self.kernel_size - 1), -(self.kernel_size - 1))
         self.k_values = [W.shape[3] for W in conv_weights]
-
         self._conv_weights = self.__create_conv_weights(conv_weights)
+
+        self.net_dims = self.__net_dims()
+
+        # optionally test similarity between new and old CNNs to ensure that
+        # the conversion was correct
         # self.__test_similarity()
+
+    @property
+    def conv_weights_and_biases(self):
+        return zip(self._conv_weights, self._conv_biases)
+
+    @property
+    def linear_weights_and_biases(self):
+        return zip(self._lin_weights, self._lin_biases)
+
+    @property
+    def network_dict(self):
+        """Getter method for data from CNN when transformed into feed-forward
+        network
+        """
 
         data = {}
         data['network'] = {
             'weights': self._conv_weights + self._lin_weights,
-            'dims': ['784-2880-4000-500-10'],
+            'dims': self.net_dims,
             'activation': 'relu',
-            'accuracy': 98,
+            'accuracy': self.accuracy,
+            'kernel_size': self.kernel_size
         }
 
-        savemat('784-2880-4000-500-10-cnn.mat', data)
+        return data
 
+    def __find_net_dims(self):
+        """Determines the network dimensions of the CNN
 
-    @property
-    def conv_weights_and_biases():
-        return zip(self._conv_weights, self._conv_biases)
+        returns:
+            net_dims: list of ints - dimensions of each layer
+        """
 
-    @property
-    def linear_weights_and_biases():
-        return zip(self._lin_weights, self._lin_biases)
+        input_params = INPUT_CHANNELS * INPUT_SIZE ** 2
+        net_dims = [input_params]
+        for w in self._conv_weights + self._lin_weights:
+            net_dims.append(w.shape[0])
 
 
     def __load_numpy_params(self):
@@ -51,7 +76,7 @@ class ConvNet:
 
         for param_tensor in self._model.state_dict():
             numpy_tensor = self._model.state_dict()[param_tensor].numpy()
-            if 'conv' in param_tensor or 'features' in param_tensor:
+            if 'conv' in param_tensor or 'feature' in param_tensor:
                 if 'weight' in param_tensor:
                     conv_weights.append(numpy_tensor)
                 elif 'bias' in param_tensor:
@@ -81,6 +106,8 @@ class ConvNet:
         """
 
         conv_xform_weights = []
+        curr_n = 32
+        k = 5
         for idx, conv_w in enumerate(conv_weights):
 
             curr_n = self.n_values[idx]
