@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.linalg import circulant
 from train_cnn import create_loaders
-from scipy.io import savemat
+import torch
 
 INPUT_SIZE = 32
 INPUT_CHANNELS = 3
@@ -18,11 +18,11 @@ class ConvNet:
         self.k_values = [W.shape[3] for W in conv_weights]
         self._conv_weights = self.__create_conv_weights(conv_weights)
 
-        self.net_dims = self.__net_dims()
+        self.net_dims = self.__find_net_dims()
 
         # optionally test similarity between new and old CNNs to ensure that
         # the conversion was correct
-        # self.__test_similarity()
+        self.__test_similarity()
 
     @property
     def conv_weights_and_biases(self):
@@ -326,3 +326,8 @@ class ConvNet:
                 false_counter += 1
 
         print(f"Number of mistakes: {false_counter}")
+
+if __name__ == '__main__':
+    model = torch.load('cnn-model.pt')
+    accuracy = 95
+    ConvNet(model, accuracy, kernel_size=5)
